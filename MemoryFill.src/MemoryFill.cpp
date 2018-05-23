@@ -1,6 +1,31 @@
-// MemoryFill.cpp : Defines the entry point for the console application.
-//
-
+/* ================================================================= *
+ *  MemoryFill.cpp : Main file                                       *
+ *                                                                   *
+ *  MemoryFill is an auxiliary program that enables "cold start",    *
+ *  especially for several runs with the same input files.           *
+ *                                                                   *
+ *                                                                   *
+ *  Copyright (c) 2018, Szymon Grabowski and Wojciech Bieniecki      *
+ *  All rights reserved                                              *
+ *                                                                   * 
+ *  This program is free software: you can redistribute it and/or    *
+ *  modify it under the terms of the GNU General Public License as   *
+ *  published by the Free Software Foundation, either version 3 of   *
+ *  the License, or (at your option) any later version.              *
+ *                                                                   *
+ *  This program is distributed in the hope that it will be useful,  *
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of   *
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the    *
+ *  GNU General Public License for more details.                     *
+ *                                                                   *
+ *  You should have received a copy of the GNU General Public        *
+ *  License along with this program.                                 *
+ *                                                                   *
+ *  This file is subject to the terms and conditions defined in the  *
+ *  file 'license', which is part of this source code package.       *
+ * ================================================================= */
+ 
+ 
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -8,7 +33,7 @@
 #include <fstream>
 
 void displayHelp(char* name) {
-	std::cout << "Memory fill.\n Use: " << name << " <bytes to fill\n";
+	std::cout << "Memory fill, by Szymon Grabowski and Wojciech Bieniecki, May 2018.\n Use: " << name << " <bytes to fill\n";
 	std::cout << name << " 1024\n";
 	std::cout << name << " 53k\n";
 	std::cout << name << " 53M\n";
