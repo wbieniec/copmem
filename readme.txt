@@ -34,8 +34,8 @@ copMEM prints maximal exact matches to the -o file.
 Currently, copMEM is a stand-alone program. In a future version we are going to allow to use it also as a drop-in replacement for MUMmer.
 
 
-MemoryFill
-==========
+MemoryFill:
+-----------
 MemoryFill is an auxiliary program that enables "cold start", especially for several runs with the same input files.
 Usage:
 
