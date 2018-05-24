@@ -76,10 +76,11 @@ The value of 2^29 is the number of slots in the hash table.
 Cite:
 -----
 If you find copMEM useful, please cite (at this moment, only an arXiv report exists):
-...
+
+https://arxiv.org/abs/1805.08816
+
 Szymon Grabowski, Wojciech Bieniecki
 "copMEM: Finding maximal exact matches via sampling both genomes"
-...
 
 
 References:
