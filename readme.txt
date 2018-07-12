@@ -1,4 +1,4 @@
-copMEM, v0.1
+copMEM, v0.2
 ============
 copMEM is a program for efficient computation of MEMs (Maximal Exact Matches) in a pair of genomes.
 Its main algorithmic idea requires that two internal parameters (k1 and k2) are coprime, hence the name.
@@ -26,8 +26,19 @@ where the obligatory parameters are:
   <Q>            query file with one or more FASTA sequences,
 
 and the optional one:
-  -L n           minimal MEM length (the default value is 100). This value must be >= 50,
-  -v             verbose mode (prints more details).
+  -l n           minimal MEM length (the default value is 100). This value must be >= 50,
+  -v | -q        verbose mode (prints more details) | quiet mode,
+  -f             fast mode, loads two files in memory, faster I/O operations,
+  -r             calculates reverse complement matches. Does not go with -f switch,
+  -b             calculates forward and reverse complement matches. Does not go with -f switch,
+  -K 36|44|56    determines length of k-mer for hash calculation. Default is 44,
+  -e             forces k2 == 1,
+  -H 1|2|3|4|5   selects hash function. Default is 1.
+     1: maRushPrime1HashSimplified (http://www.amsoftware.narod.ru/algo2.html);
+     2: xxHash32 by Yann Collet (https://github.com/Cyan4973/xxHash);
+     3: xxHash64 by Yann Collet (https://github.com/Cyan4973/xxHash);
+     4: MetroHash64 by J. Andrew Rogers (https://github.com/jandrewrogers/MetroHash);
+     5: CityHash64 from Google (https://github.com/google/cityhash).
 
 copMEM prints maximal exact matches to the -o file.
 
@@ -66,9 +77,9 @@ Notes:
 ------
 In the current version, copMEM is single-threaded. Despite that, it still works faster than its contenders (e.g., about twice faster than E-MEM using 10 threads on a 6c/12t i7 machine).
 The memory usage of copMEM is, roughly, 
-|R| + |Q| + 4 * (2^29 + |R| / k1) + |output|
+|R| + |maxQSeq| + 4 * (2^29 + |R| / k1) + |output|
 bytes, where
-|output| is the maximum output size *per sequence from file Q*, and k1 is an internal parameter approximately equal to sqrt(L - 44).  For example, k1 = 8 for L = 100 and k1 = 13 for L = 200.
+maxQSeq is the longest sequence (i.e., chromosome) from file Q, |output| is the maximum output size *per sequence from file Q*, and k1 is an internal parameter approximately equal to sqrt(L - 44).  For example, k1 = 8 for L = 100 and k1 = 13 for L = 200.
 If the datasets are larger than >4 GB (e.g., Triticum plants), replace the multiplier 4 with 8 in the memory formula above.
 The value of 2^29 is the number of slots in the hash table.
 

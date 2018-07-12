@@ -152,11 +152,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Hashes.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="StopWatch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="city.cpp" />
     <ClCompile Include="CopMEM.cpp" />
+    <ClCompile Include="metrohash64.cpp" />
     <ClCompile Include="StopWatch.cpp" />
+    <ClCompile Include="xxhash.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CopMEM.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

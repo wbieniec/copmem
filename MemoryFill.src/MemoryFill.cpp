@@ -29,6 +29,8 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <thread>
+#include <chrono>
 #include <iostream>
 #include <fstream>
 
@@ -49,7 +51,7 @@ int main(int ac, char* av[])
 		return 0;
 	}
 
-	int l = strlen(av[1]);
+	size_t l = strlen(av[1]);
 	size_t mult = 1;
 	switch (av[1][l - 1]) {
 	case 'k':
@@ -80,6 +82,9 @@ int main(int ac, char* av[])
 		}
 		memset(arr[i], 170, fillSize);
 	}
+	for (size_t i = 0; i < num; i++)
+		delete [] arr[i];
+	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 	std::cout << " Done!\n";
 	return 0;
 }

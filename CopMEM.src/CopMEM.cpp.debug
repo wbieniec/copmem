@@ -67,6 +67,13 @@ enum verbosity { v0, v1, v2 };
 enum reverse { no, yes, both };
 
 
+//DEBUG
+std::ofstream logFile;
+std::ofstream logFile_cumm;
+std::ofstream logFile_pos;
+
+
+
 /////////////////// FUNCTIONS ///////////////////////////
 void initHashFuncMatrix();
 void displayHelp(const char* progName);
@@ -98,14 +105,16 @@ std::ofstream f_matches;
 std::string R_FN;
 std::string Q_FN;
 
+
+
 verbosity isVerbose;
 reverse isRC;
 bool isFast;
 
-char* blockBuffer; //buffer used in buffered reading of some Query sequences
+
+char* blockBuffer; //buffer used in buffered reading of some Query sequences in tight mode and buffered reading mode
 size_t blockBufferSize;
 BlockVector blockVector;
-
 
 void initGlobals() {
 	K = 44;
@@ -119,7 +128,6 @@ void initGlobals() {
 	isFast = false;
 	matchesBuffer.reserve(MATCHES_BUFFER_SIZE);
 }
-
 
 void initHashFuncMatrix() {
 	hashFuncMatrix[36][1] = maRushPrime1HashSimplified<36>;
@@ -140,6 +148,7 @@ void initHashFuncMatrix() {
 }
 
 
+
 //////////////////// GLOBALS ////////////////////////////
 
 class NullBuffer : public std::streambuf
@@ -148,16 +157,14 @@ public:
 	int overflow(int c) { return c; }
 };
 
-
 NullBuffer null_buffer;
 std::ostream null_stream(&null_buffer);
 
 std::ostream *v1logger, *v2logger;
 
-
 void displayHelp(const char* progName) {
-	std::cout << "copMEM 0.2, by Szymon Grabowski and Wojciech Bieniecki, July 2018." << std::endl;
-	std::cout << "Usage: " << progName << " [-l n] [-H l] [-K 36|44|56] [-e] [-v|-q] [-f]|[-b]|[-r] <-o MEMs_file> <Ref_genome> <Query_genome>\n";
+	std::cout << "copMEM 0.1.1, by Szymon Grabowski and Wojciech Bieniecki, June 2018." << std::endl;
+	std::cout << "Usage: " << progName << " [-l n] [-H l] [-v|-q] [-f]|[-b]|[-r] <-o MEMs_file> <Ref_genome> <Query_genome>\n";
 	std::cout << "Attention: -o is a required parameter. l is optional (default: 100).\n";
 	std::cout << "-o MEMs_file - the output file with matches.\n";
 	std::cout << "-v - verbose mode. Display more details.\n";
@@ -168,9 +175,7 @@ void displayHelp(const char* progName) {
 	std::cout << "-l n - minimal length of matches. Default value is 100.\n";
 	std::cout << "-H n - Hash Function. 1: maRushPrime1HashSimplified (default), 2: xxhash32, 3: xxhash64, 4: metroHash64, 5: cityHash64.\n";
 	std::cout << "-K 36|44|56 Default K is 44.\n";
-	std::cout << "-e - simulates E-MEM (forces k_2 = 1). If you don't understand it, don't use!\n";
 }
-
 
 void displayParams() {
 	std::cout << "PARAMETERS" << std::endl;
@@ -190,7 +195,6 @@ void displayParams() {
 	if (hashFunc == hashFuncMatrix[36][4] || hashFunc == hashFuncMatrix[44][4] || hashFunc == hashFuncMatrix[56][4]) std::cout << "metroHash64\n";
 	if (hashFunc == hashFuncMatrix[36][5] || hashFunc == hashFuncMatrix[44][5] || hashFunc == hashFuncMatrix[56][5]) std::cout << "cityHash64\n";
 }
-
 
 void processCmd(int argc, char* argv[]) {
 	assert(K % 4 == 0);
@@ -215,7 +219,7 @@ void processCmd(int argc, char* argv[]) {
 
 		if (arg == "-v") {
 			if (isVerbose == v0) {
-				std::cerr << "-v and -q parameters are mutually exclusive.\n";
+				std::cerr << "-v and -q parameters are exclusive.\n";
 				exit(1);
 			}
 			isVerbose = v2;
@@ -227,7 +231,7 @@ void processCmd(int argc, char* argv[]) {
 		}
 		if (arg == "-q") {
 			if (isVerbose == v2) {
-				std::cerr << "-v and -q parameters are mutually exclusive.\n";
+				std::cerr << "-v and -q parameters are exclusive.\n";
 				exit(1);
 			}
 			isVerbose = v0;
@@ -238,14 +242,14 @@ void processCmd(int argc, char* argv[]) {
 		}
 		if (arg == "-b") {
 			if (isRC == yes) {
-				std::cerr << "-b and -r parameters are mutually exclusive.\n";
+				std::cerr << "-b and -r parameters are exclusive.\n";
 				exit(1);
 			}
 			isRC = both;
 		}
 		if (arg == "-r") {
 			if (isRC == both) {
-				std::cerr << "-b and -r parameters are mutually exclusive.\n";
+				std::cerr << "-b and -r parameters are exclusive.\n";
 				exit(1);
 			}
 			isRC = yes;
@@ -272,7 +276,7 @@ void processCmd(int argc, char* argv[]) {
 			if (i + 1 < argc) {
 				K = atoi(argv[++i]);
 				if ((K != 44) && (K != 36) && (K != 56)) {
-					std::cerr << "Incorrect K value (must be 36 or 44, or 56).\n";
+					std::cerr << "Incorrect K value (must be 36 or 44 or 56).\n";
 					exit(1);
 				}
 			}
@@ -285,7 +289,7 @@ void processCmd(int argc, char* argv[]) {
 			if (i + 1 < argc) {
 				H = atoi(argv[++i]);
 				if (H < 1 || H > 5) {
-					std::cerr << "Incorrect H value (must be from 1 to 5).\n";
+					std::cerr << "Incorrect H value (must be 1 to 5).\n";
 					exit(1);
 				}
 			}
@@ -348,15 +352,17 @@ void processCmd(int argc, char* argv[]) {
 		k1 = L - K + 1;
 		k2 = 1;
 	}
+	//DEBUG
+	logFile.open(matchesFN + ".debug");
+	logFile_cumm.open(matchesFN + ".cumm", std::ios::binary);
+	logFile_pos.open(matchesFN + ".pos", std::ios::binary);
 }
-
 
 bool arrayComp(size_t* p1, size_t* p2) {
 	if (p1[1] < p2[1]) return true;
 	if (p1[1] > p2[1]) return false;
 	return p1[0] < p2[0];
 }
-
 
 template <class MyUINT>
 void genCumm(GenomeData& genome, MyUINT* cumm) {
@@ -366,8 +372,11 @@ void genCumm(GenomeData& genome, MyUINT* cumm) {
 	size_t N = std::get<0>(genome);
 	char* gen = std::get<1>(genome);
 
-	//std::fill(cumm, cumm + HASH_SIZE + 2, 0);
+	//std::fill(cumm, cumm + HASH_SIZE + 2, 0);  //BUG!
 	memset(cumm, sizeof(MyUINT)*(HASH_SIZE + 2), (MyUINT)0);
+	logFile_cumm.write((char*)cumm, sizeof(MyUINT)*(HASH_SIZE + 2));
+	logFile_cumm.close();
+	exit(0);
 	uint32_t hashPositions[MULTI1];
 	size_t i;
 
@@ -391,7 +400,8 @@ void genCumm(GenomeData& genome, MyUINT* cumm) {
 		++cumm[h];
 	}
 	//////////////////// processing the end part of R //////////////////////
-	std::partial_sum(cumm, cumm + HASH_SIZE + 2, cumm); 
+	std::partial_sum(cumm, cumm + HASH_SIZE + 2, cumm);  // used to be: +1 (bug??)
+
 }
 
 
@@ -409,7 +419,6 @@ void dumpMEM(SequenceItem& item1, SequenceItem& item2, size_t* match) {
 	matchesBuffer.append("\n");
 }
 
-
 void dumpMEMTight(SequenceItem& item1, size_t* match, size_t counter) {
 	size_t baseindex1 = match[0] - item1.second;
 	size_t baseindex2 = match[1] - counter;
@@ -424,11 +433,9 @@ void dumpMEMTight(SequenceItem& item1, size_t* match, size_t counter) {
 	matchesBuffer.append("\n");
 }
 
-
 bool lowerBoundComp(SequenceItem lhs, SequenceItem rhs) {
 	return lhs.second < rhs.second;
 }
-
 
 SequenceItem findSeqDesc(size_t index, SequenceVector& seq) {
 	SequenceItem dummySequenceItem = { "", index };
@@ -437,7 +444,6 @@ SequenceItem findSeqDesc(size_t index, SequenceVector& seq) {
 	size_t diff = lower - seq.begin();
 	return seq[diff - 1];
 }
-
 
 void displayMatchInfo(std::string& name, size_t count) {
 	switch (count) {
@@ -488,11 +494,10 @@ void postProcess(std::vector<size_t*> &matches, GenomeData& t1, GenomeData& t2, 
 		prev_match = match;
 	}
 	displayMatchInfo(seq2item.first, count);
-	for (auto match: matches)
+	for (auto match : matches)
 		delete[] match;
 	matches.clear();
 }
-
 
 void postProcessTight(std::vector<size_t*> &matches, GenomeData& t1, std::string seqName, size_t counter) {
 	matchesBuffer.append("> ");
@@ -519,8 +524,9 @@ void postProcessTight(std::vector<size_t*> &matches, GenomeData& t1, std::string
 
 	std::uint64_t count = 1ULL;
 
-	for (auto match: matches) {
-		if (memcmp(prev_match, match, 3 * sizeof(size_t)) != 0) {
+	for (auto match : matches) {
+		if (memcmp(prev_match, match, 3 * sizeof(size_t)) != 0) 
+		{
 			auto foundPos = std::find(gen1 + match[0], gen1 + match[0] + match[2], 'N');
 			if (foundPos != gen1 + match[0] + match[2])
 				continue;
@@ -532,11 +538,10 @@ void postProcessTight(std::vector<size_t*> &matches, GenomeData& t1, std::string
 		prev_match = match;
 	}
 	displayMatchInfo(seqName, count);
-	for (auto match: matches)
+	for (auto match : matches)
 		delete[] match;
 	matches.clear();
 }
-
 
 template<class MyUINT1, class MyUINT2>
 HashBuffer<MyUINT1, MyUINT2> processRef(GenomeData& rGenome) {
@@ -591,6 +596,11 @@ HashBuffer<MyUINT1, MyUINT2> processRef(GenomeData& rGenome) {
 		++cumm[h];
 	}
 	*v2logger << "\tprocessRef: cumm(2) = " << stopwatch.stop() << std::endl;
+
+	//logFile_cumm.write((char*)cumm, sizeof(MyUINT2)*(HASH_SIZE + 2));
+	//logFile_pos.write((char*)sampledPositions, sizeof(MyUINT1)*(hashCount + 2));
+	logFile_cumm.close();
+	logFile_pos.close();
 
 	return { sampledPositions, cumm };
 }
@@ -652,7 +662,7 @@ void processQuery(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome, Geno
 			memcpy(posArray + i2 * 2, cumm + hArray[i2], sizeof(MyUINT2) * 2);
 		}
 
-		curr2 = start2 + i1;
+		curr2 = start2 + i1;	// !!!
 		for (size_t i2 = 0; i2 < tempCount; ++i2) {
 			if (posArray[i2 * 2] == posArray[i2 * 2 + 1]) {
 				curr2 += k2;
@@ -702,6 +712,7 @@ void processQuery(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome, Geno
 								break;
 						}
 						matches.push_back(tempMatch);
+
 					}
 				}
 			}
@@ -791,9 +802,8 @@ void processQuery(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome, Geno
 	*v1logger << "Character extensions = " << charExtensions << "\n";
 }
 
-
 void reverseComplement(char* start, const char* lut, const std::size_t N) {
-	char* left = start + 1; // sequence starts from paddingChar
+	char* left = start + 1; //sequence starts from paddingChar
 	char* right = start + N - 1;
 	while (right > left) {
 		char tmp = lut[*left];
@@ -803,7 +813,6 @@ void reverseComplement(char* start, const char* lut, const std::size_t N) {
 		--right;
 	}
 }
-
 
 template<class MyUINT1, class MyUINT2>
 void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome){
@@ -851,13 +860,15 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 	size_t i1;
 
 	size_t counter = 0ULL;
-	size_t charExtensions = 0ULL;
+	size_t charExtensions1 = 0ULL;
+	size_t charExtensions2 = 0ULL;
 
-	for (auto bv: blockVector) {
+	for (auto bv : blockVector) {
 		SequenceVector2 sv2 = readBlock(qf, bv, paddingChar, true);
 		for (auto si3 : sv2) {
 			size_t N2 = std::get<2>(si3);
 			char* start2 = std::get<1>(si3);
+			logFile << std::get<0>(si3) <<"\n";
 			if (isRC != yes) {
 				char* curr2 = start2;
 				i1 = 0;
@@ -882,8 +893,9 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 						}
 						memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
 						memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+						logFile << posArray[i2 * 2] << "\t" << posArray[i2 * 2 + 1] << "\n";  //DEBUG
 						for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
-							++charExtensions;
+							++charExtensions1;
 							curr1 = start1 + sampledPositions[j];
 							memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
 							memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
@@ -914,6 +926,7 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 					}
 				}
 				//////////////////// processing the end part of Q  //////////////////////
+				logFile << "eos\n";  //DEBUG
 				for (; i1 + K < N2 + 1; i1 += k2) {
 					char* prev = start2 + i1;
 					curr2 = start2 + i1;
@@ -928,8 +941,9 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 						}
 						memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
 						memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+						logFile << posArray[i2 * 2] << "\t" << posArray[i2 * 2 + 1] << "\n";  //DEBUG
 						for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
-							++charExtensions;
+							++charExtensions2;
 							curr1 = start1 + sampledPositions[j];
 							memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
 							memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
@@ -980,7 +994,7 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 						memcpy(posArray + i2 * 2, cumm + hArray[i2], sizeof(MyUINT2) * 2);
 					}
 
-					curr2 = start2 + i1;
+					curr2 = start2 + i1;	// !!!
 					for (size_t i2 = 0; i2 < tempCount; ++i2) {
 						if (posArray[i2 * 2] == posArray[i2 * 2 + 1]) {
 							curr2 += k2;
@@ -991,7 +1005,7 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 						memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
 
 						for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
-							++charExtensions;
+							++charExtensions1;
 							curr1 = start1 + sampledPositions[j];
 
 							memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
@@ -1045,7 +1059,7 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 						memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
 
 						for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
-							++charExtensions;
+							++charExtensions2;
 							curr1 = start1 + sampledPositions[j];
 
 							memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
@@ -1090,9 +1104,8 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 	f_matches << matchesBuffer;
 	matchesBuffer.clear();
 	f_matches.close();
-	*v1logger << "Character extensions = " << charExtensions <<  "\n";
+	*v1logger << "Character extensions = " << charExtensions1 << "   " << charExtensions2 <<  "\n";
 }
-
 
 void replaceBadSymbol(char* gen, char* dst, char symbol, char paddingChar) {
 	char* movingPtr = gen;
@@ -1107,7 +1120,6 @@ void replaceBadSymbol(char* gen, char* dst, char symbol, char paddingChar) {
 		movingPtr = tempPtr + 1;
 	}
 }
-
 
 GenomeData readMultiFasta(std::string fn, const char paddingChar, bool removeNs, const char* seqType) {
 	CStopWatch stopWatch;
@@ -1206,6 +1218,7 @@ GenomeData readMultiFasta(std::string fn, const char paddingChar, bool removeNs,
 }
 
 
+
 SequenceVector2 readBlock(std::ifstream& f, BlockItem& bi, const char paddingChar, bool removeNs) {
 	const char terminatorChar = 0;
 	const char eolChar1 = 10;
@@ -1291,10 +1304,10 @@ SequenceVector2 readBlock(std::ifstream& f, BlockItem& bi, const char paddingCha
 	return sv3;
 }
 
-
 void createBlockBuffer(std::vector<size_t>& seqStarts) {
 	//1. Obtain maximum sequence size
 	size_t seqSize = seqStarts.size();
+	//size_t maxSeqLen = 0ULL;
 	size_t maxSeqLen = 1ULL << 26; //Block length not less than 64 MB
 
 	for (size_t i = 0; i < seqSize - 1; i++) {
@@ -1328,14 +1341,13 @@ void createBlockBuffer(std::vector<size_t>& seqStarts) {
 	seqStarts.clear();
 
 	// reserve memory for block buffer
-	blockBufferSize = maxSeqLen + 2 * (L + 1);
+	blockBufferSize = maxSeqLen + 2 * (L + 1);  /// !!!!!
 	blockBuffer = new char[blockBufferSize];
 	memset(blockBuffer, 0, blockBufferSize);
 	*v2logger << "\tcreateBlockBuffer: Sequences " << seqSize << std::endl;
 	*v2logger << "\tcreateBlockBuffer: Sequence blocks " << blockVector.size() << std::endl;
 	*v2logger << "\tcreateBlockBuffer: Max block size " << maxSeqLen << std::endl;
 }
-
 
 void deleteBlockBuffer() {
 	blockVector.clear();
@@ -1388,7 +1400,8 @@ void scanMultiFasta(std::string fn){
 	seqStarts.clear();
 	
 	*v2logger << "\tscanMultiFasta: Analysing file " << stopWatch.stop() << "\n";
-	*v2logger << "\tscanMultiFasta: Sequence blocks " << blockVector.size() << std::endl;	
+	*v2logger << "\tscanMultiFasta: Sequence blocks " << blockVector.size() << std::endl;
+	
 }
 
 
@@ -1400,7 +1413,7 @@ void deleteHashBuffer(HashBuffer<MyUINT1, MyUINT2> & buf) {
 
 
 void deleteReading(GenomeData & r) {
-	delete[] (std::get<1>(r) - (L + 1));
+	delete[](std::get<1>(r) - (L + 1));
 }
 
 
@@ -1455,7 +1468,7 @@ int main(int argc, char* argv[]) {
 		if (isFast == false)
 			deleteBlockBuffer();
 		deleteHashBuffer(buffer);
-	} else
+	}else
 	if (bigRef == 1) {
 		*v1logger << "WARNING - BIG reference file (>4GB), 64-bit arrays\n";
 		std::pair<std::uint64_t*, std::uint32_t*> buffer = processRef<std::uint64_t, std::uint32_t>(rGenome);
@@ -1492,5 +1505,6 @@ int main(int argc, char* argv[]) {
 		deleteReading(qGenome);
 
 	*v1logger << "Time of deleting = " << stopwatch.stop() << "\nTotal time = " << stopwatch.totalTime() << "\nFINISHED\n";
+	logFile.close();//DEBUG
 	return 0;
 }

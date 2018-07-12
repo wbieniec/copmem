@@ -11,10 +11,21 @@ StopWatch.o: CopMEM.src/StopWatch.cpp CopMEM.src/StopWatch.h
 CopMEM.o: CopMEM.src/CopMEM.cpp
 	$(CPP) -c $(FLAGS) CopMEM.src/CopMEM.cpp  -o CopMEM.src/CopMEM.o		
 
-CopMEM: CopMEM.o StopWatch.o
-	$(CPP) $(FLAGS) CopMEM.src/CopMEM.o CopMEM.src/StopWatch.o -o copmem
 
-MemoryFill: MemoryFill.o
+city.o: CopMEM.src/city.cpp
+	$(CPP) -c $(FLAGS) CopMEM.src/city.cpp  -o CopMEM.src/city.o		
+
+xxhash.o: CopMEM.src/xxhash.c
+	$(CPP) -c $(FLAGS) CopMEM.src/xxhash.c  -o CopMEM.src/xxhash.o
+
+metrohash64.o:
+	$(CPP) -c $(FLAGS) CopMEM.src/metrohash64.cpp  -o CopMEM.src/metrohash64.o
+
+
+CopMEM: CopMEM.o StopWatch.o xxhash.o metrohash64.o city.o
+	$(CPP) $(FLAGS) CopMEM.src/CopMEM.o CopMEM.src/StopWatch.o CopMEM.src/xxhash.o CopMEM.src/metrohash64.o CopMEM.src/city.o -o copmem
+
+MemoryFill: MemoryFill.o city.o
 	$(CPP) $(FLAGS) MemoryFill.src/MemoryFill.o -o memoryfill
 
 
