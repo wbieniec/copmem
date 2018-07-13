@@ -366,7 +366,6 @@ void genCumm(GenomeData& genome, MyUINT* cumm) {
 	size_t N = std::get<0>(genome);
 	char* gen = std::get<1>(genome);
 
-	//std::fill(cumm, cumm + HASH_SIZE + 2, 0);
 	memset(cumm, sizeof(MyUINT)*(HASH_SIZE + 2), (MyUINT)0);
 	uint32_t hashPositions[MULTI1];
 	size_t i;
