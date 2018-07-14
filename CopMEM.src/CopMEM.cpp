@@ -366,6 +366,7 @@ void genCumm(GenomeData& genome, MyUINT* cumm) {
 	size_t N = std::get<0>(genome);
 	char* gen = std::get<1>(genome);
 
+	//std::fill(cumm, cumm + HASH_SIZE + 2, 0);
 	memset(cumm, sizeof(MyUINT)*(HASH_SIZE + 2), (MyUINT)0);
 	uint32_t hashPositions[MULTI1];
 	size_t i;
@@ -801,6 +802,8 @@ void reverseComplement(char* start, const char* lut, const std::size_t N) {
 		++left;
 		--right;
 	}
+	if (left == right)
+		*left = lut[*left];
 }
 
 
@@ -829,10 +832,16 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 	char complement[256];
 	memset(complement, paddingChar, 256);
 	complement['A'] = 'T';
+	complement['a'] = 'T';
 	complement['C'] = 'G';
+	complement['c'] = 'G';
 	complement['G'] = 'C';
+	complement['g'] = 'C';
 	complement['T'] = 'A';
+	complement['t'] = 'A';
 	complement['N'] = 'N';
+	complement['n'] = 'N';
+
 
 	MyUINT1* sampledPositions = buffer.first;
 	MyUINT2* cumm = buffer.second;
@@ -879,31 +888,38 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 							curr2 += k2;
 							continue;
 						}
+						
 						memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
 						memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+						
 						for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
 							++charExtensions;
 							curr1 = start1 + sampledPositions[j];
+							
 							memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
 							memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
+							
 							if (r1 == r2 || l1 == l2) {
 								char* p1 = curr1 + K;
 								char* p2 = curr2 + K;
+								
 								while (*p1 == *p2) {
 									++p1;
 									++p2;
 								}
 								char* right = p1;
+								
 								p1 = curr1 - 1;
 								p2 = curr2 - 1;
 								while (*p1 == *p2) {
 									--p1;
 									--p2;
 								}
+								
 								if (right - p1 >= L_PLUS_ONE && memcmp(curr1, curr2, K) == 0) {
 									size_t* tempMatch = new size_t[3];
 									tempMatch[0] = p1 + 1 - start1;
-									tempMatch[1] = p2 + 1 - start2 + counter;
+									tempMatch[1] = (p2 + 1 - start2) + counter;
 									tempMatch[2] = right - p1 - 1;
 									matches.push_back(tempMatch);
 								}
@@ -919,37 +935,45 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 					size_t tempCount = 0;
 					memcpy(posArray + tempCount * 2, cumm + hashFunc(curr2), sizeof(MyUINT2) * 2);
 					++tempCount;
+					
 					curr2 = start2 + i1;
 					for (size_t i2 = 0; i2 < tempCount; ++i2) {
 						if (posArray[i2 * 2] == posArray[i2 * 2 + 1]) {
 							curr2 += k2;
 							continue;
 						}
+						
 						memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
 						memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+						
 						for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
 							++charExtensions;
 							curr1 = start1 + sampledPositions[j];
+							
 							memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
 							memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
+							
 							if (r1 == r2 || l1 == l2) {
 								char* p1 = curr1 + K;
 								char* p2 = curr2 + K;
+								
 								while (*p1 == *p2) {
 									++p1;
 									++p2;
 								}
 								char* right = p1;
+								
 								p1 = curr1 - 1;
 								p2 = curr2 - 1;
 								while (*p1 == *p2) {
 									--p1;
 									--p2;
 								}
+								
 								if (right - p1 >= L_PLUS_ONE && memcmp(curr1, curr2, K) == 0) {
 									size_t* tempMatch = new size_t[3];
 									tempMatch[0] = p1 + 1 - start1;
-									tempMatch[1] = p2 + 1 - start2 + counter;
+									tempMatch[1] = (p2 + 1 - start2) + counter;
 									tempMatch[2] = right - p1 - 1;
 									matches.push_back(tempMatch);
 								}
