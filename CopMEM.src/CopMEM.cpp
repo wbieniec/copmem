@@ -385,7 +385,6 @@ void genCumm(GenomeData& genome, MyUINT* cumm) {
 	}
 
 	//////////////////// processing the end part of R  //////////////////////
-	i += k1; // !!!!!
 	for (; i < N - K + 1; i += k1) {
 		uint32_t h = hashFunc(gen + i) + 2;
 		++cumm[h];
