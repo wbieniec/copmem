@@ -366,8 +366,7 @@ void genCumm(GenomeData& genome, MyUINT* cumm) {
 	size_t N = std::get<0>(genome);
 	char* gen = std::get<1>(genome);
 
-	//std::fill(cumm, cumm + HASH_SIZE + 2, 0);
-	memset(cumm, sizeof(MyUINT)*(HASH_SIZE + 2), (MyUINT)0);
+	std::fill(cumm, cumm + HASH_SIZE + 2, 0);
 	uint32_t hashPositions[MULTI1];
 	size_t i;
 
@@ -441,8 +440,8 @@ SequenceItem findSeqDesc(size_t index, SequenceVector& seq) {
 void displayMatchInfo(std::string& name, size_t count) {
 	switch (count) {
 		case 0:  *v2logger << name << ": no matches.\n"; break;
-		case 1:  *v2logger << name << ": match.\n"; break;
-		default: *v2logger << name << ": matches.\n"; break;
+		case 1:  *v2logger << name << ": 1 match.\n"; break;
+		default: *v2logger << name << ": " << count << " matches.\n"; break;
 	}
 }
 
@@ -638,7 +637,6 @@ void processQuery(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome, Geno
 	size_t i1;
 	for (i1 = 0; i1 + K + k2MULTI < N2 + 1 ; i1 += k2MULTI) {
 		size_t i1temp = i1;
-		char* prev = start2 + i1;
 		curr2 = start2 + i1;
 		size_t tempCount = 0;
 		for (size_t i2 = 0; i2 < MULTI; ++i2) {
@@ -710,7 +708,6 @@ void processQuery(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome, Geno
 
 	//////////////////// processing the end part of Q  //////////////////////
 	for (; i1 + K < N2 + 1; i1 += k2) {
-		char* prev = start2 + i1;
 		curr2 = start2 + i1;
 		size_t tempCount = 0;
 
@@ -870,7 +867,6 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 				i1 = 0;
 				for (i1 = 0; i1 + K + k2MULTI < N2 + 1; i1 += k2MULTI) {
 					size_t i1temp = i1;
-					char* prev = start2 + i1;
 					curr2 = start2 + i1;
 					size_t tempCount = 0;
 					for (size_t i2 = 0; i2 < MULTI; ++i2) {
@@ -929,7 +925,6 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 				}
 				//////////////////// processing the end part of Q  //////////////////////
 				for (; i1 + K < N2 + 1; i1 += k2) {
-					char* prev = start2 + i1;
 					curr2 = start2 + i1;
 					size_t tempCount = 0;
 					memcpy(posArray + tempCount * 2, cumm + hashFunc(curr2), sizeof(MyUINT2) * 2);
@@ -991,7 +986,6 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 				i1 = 0;
 				for (i1 = 0; i1 + K + k2MULTI < N2 + 1; i1 += k2MULTI) {
 					size_t i1temp = i1;
-					char* prev = start2 + i1;
 					curr2 = start2 + i1;
 					size_t tempCount = 0;
 					for (size_t i2 = 0; i2 < MULTI; ++i2) {
@@ -1050,7 +1044,6 @@ void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, GenomeData& rGenome)
 				}
 				//////////////////// processing the end part of Q  //////////////////////
 				for (; i1 + K < N2 + 1; i1 += k2) {
-					char* prev = start2 + i1;
 					curr2 = start2 + i1;
 					size_t tempCount = 0;
 					memcpy(posArray + tempCount * 2, cumm + hashFunc(curr2), sizeof(MyUINT2) * 2);
